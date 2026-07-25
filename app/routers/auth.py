@@ -12,8 +12,18 @@ router = APIRouter()
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-    new_user = models.User(name=user.name, email=user.email, hashed_password=hash_password(user.password))
-    db.add(new_user); db.commit(); db.refresh(new_user)
+    
+    assigned_role = "admin" if user.email == "admin@hiresense.com" else "user"
+
+    new_user = models.User(
+        name=user.name, 
+        email=user.email, 
+        hashed_password=hash_password(user.password),
+        role=assigned_role
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     return new_user
 
 
@@ -42,6 +52,8 @@ def me(current_user=Depends(get_current_user)):
 
 @router.put("/me", response_model=schemas.UserOut)
 def update_me(update: schemas.UserUpdate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    if update.name: current_user.name = update.name
-    db.commit(); db.refresh(current_user)
+    if update.name: 
+        current_user.name = update.name
+    db.commit()
+    db.refresh(current_user)
     return current_user
