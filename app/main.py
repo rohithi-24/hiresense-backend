@@ -15,15 +15,14 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://hiresense.netlify.app",
         "https://hirsense.netlify.app",
+        "https://hiresense.netlify.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Auth router MUST be first
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
 app.include_router(applicants.router, prefix="/applicants", tags=["applicants"])
