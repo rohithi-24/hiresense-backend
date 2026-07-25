@@ -38,7 +38,15 @@ class Application(Base):
     skills = Column(String, default="")
     resume_path = Column(String, default="")
     ai_score = Column(Float, default=0)
-    status = Column(String, default="Under Review")
+    status = Column(String, default="under_review")
     created_at = Column(DateTime, default=datetime.utcnow)
     user = relationship("User", back_populates="applications")
     job = relationship("Job", back_populates="applications")
+
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    action = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

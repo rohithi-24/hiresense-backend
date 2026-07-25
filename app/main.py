@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from datetime import datetime
 from app.database import Base, engine
-from app.routers import auth, jobs, applicants, applications, stats
+from app.routers import auth, jobs, applicants, applications, stats, screening, reports
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,6 +23,8 @@ app.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
 app.include_router(applicants.router, prefix="/applicants", tags=["applicants"])
 app.include_router(applications.router, prefix="/applications", tags=["applications"])
 app.include_router(stats.router, prefix="/auth", tags=["stats"])
+app.include_router(screening.router, tags=["screening"])
+app.include_router(reports.router, tags=["reports"])
 
 
 @app.exception_handler(RequestValidationError)
