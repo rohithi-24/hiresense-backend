@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
-import shutil, os, random
+import shutil, os
 from app.database import get_db
 from app import models, schemas
 from app.utils import get_current_user
+from app.services.resume_parser import extract_text_from_pdf
+from app.services.skill_extractor import extract_skills
+from app.services.scoring import calculate_score
 
 router = APIRouter()
 
@@ -30,20 +33,31 @@ async def apply(
             shutil.copyfileobj(resume.file, f)
         resume_path = path
 
-    # Mock AI score (replace with real AI later)
-    ai_score = round(random.uniform(55, 97), 1)
-
     app = models.Application(
         user_id=current_user.id,
         job_id=job_id,
         cover_letter=cover_letter,
         skills=skills,
         resume_path=resume_path,
-        ai_score=ai_score,
+        ai_score=0,
         status="Under Review",
     )
-    db.add(app); db.commit()
-    return {"message": "Application submitted", "ai_score": ai_score}
+    db.add(app)
+    db.commit()
+    db.refresh(app)
+
+    # Automatically run real AI screening if a resume was provided
+    if resume_path:
+        job = db.query(models.Job).filter(models.Job.id == job_id).first()
+        if job:
+            resume_text = extract_text_from_pdf(resume_path)
+            candidate_skills = extract_skills(resume_text)
+            job_skills = extract_skills((job.description or "").lower())
+            real_score = calculate_score(job_skills, candidate_skills)
+            app.ai_score = real_score
+            db.commit()
+
+    return {"message": "Application submitted", "ai_score": app.ai_score}
 
 
 @router.get("/my", response_model=List[schemas.ApplicationOut])
