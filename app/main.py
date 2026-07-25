@@ -23,6 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Auth router MUST be first
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
 app.include_router(applicants.router, prefix="/applicants", tags=["applicants"])
