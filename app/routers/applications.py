@@ -46,16 +46,18 @@ async def apply(
     db.commit()
     db.refresh(app)
 
-    # Automatically run real AI screening if a resume was provided
-    if resume_path:
-        job = db.query(models.Job).filter(models.Job.id == job_id).first()
-        if job:
-            resume_text = extract_text_from_pdf(resume_path)
-            candidate_skills = extract_skills(resume_text)
-            job_skills = extract_skills((job.description or "").lower())
-            real_score = calculate_score(job_skills, candidate_skills)
-            app.ai_score = real_score
-            db.commit()
+    # Run real AI screening using BOTH resume text and candidate-selected skills
+    job = db.query(models.Job).filter(models.Job.id == job_id).first()
+    if job:
+        resume_text = extract_text_from_pdf(resume_path) if resume_path else ""
+        skills_from_resume = extract_skills(resume_text)
+        skills_from_form = extract_skills(skills.lower())
+        candidate_skills = list(set(skills_from_resume) | set(skills_from_form))
+
+        job_skills = extract_skills((job.description or "").lower())
+        real_score = calculate_score(job_skills, candidate_skills)
+        app.ai_score = real_score
+        db.commit()
 
     return {"message": "Application submitted", "ai_score": app.ai_score}
 
