@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.database import get_db
 from app import models, schemas
 from app.utils import hash_password, verify_password, create_access_token, get_current_user
@@ -12,12 +13,12 @@ router = APIRouter()
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     assigned_role = "admin" if user.email == "admin@hiresense.com" else "user"
 
     new_user = models.User(
-        name=user.name, 
-        email=user.email, 
+        name=user.name,
+        email=user.email,
         hashed_password=hash_password(user.password),
         role=assigned_role
     )
@@ -52,8 +53,21 @@ def me(current_user=Depends(get_current_user)):
 
 @router.put("/me", response_model=schemas.UserOut)
 def update_me(update: schemas.UserUpdate, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
-    if update.name: 
+    if update.name:
         current_user.name = update.name
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.get("/me/stats")
+def me_stats(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    avg_score = (
+        db.query(func.avg(models.Application.ai_score))
+        .filter(models.Application.user_id == current_user.id)
+        .scalar()
+    )
+    return {
+        "ai_score_avg": round(avg_score or 0, 1),
+        "profile_views": current_user.profile_views or 0,
+    }
