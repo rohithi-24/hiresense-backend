@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.models.job import Job
+from app.models import Job
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
