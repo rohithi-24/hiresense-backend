@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database import Base, engine
 from app.routers import auth, jobs, applicants, applications, stats, screening, reports
 from app.seed_jobs import seed_demo_jobs
+from app.seed_admin import seed_admin_user
 
 Base.metadata.create_all(bind=engine)
 
@@ -15,6 +16,7 @@ app = FastAPI(title="HireSense API")
 @app.on_event("startup")
 def run_startup_seed():
     seed_demo_jobs()
+    seed_admin_user()
 
 
 app.add_middleware(
