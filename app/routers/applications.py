@@ -55,6 +55,11 @@ async def apply(
         candidate_skills = list(set(skills_from_resume) | set(skills_from_form))
 
         job_skills = extract_skills((job.description or "").lower())
+        
+        # Fallback safeguard to prevent zero-division if the job description doesn't trigger any default keywords
+        if not job_skills:
+            job_skills = ["react", "javascript", "python", "tailwind"]
+
         real_score = calculate_score(job_skills, candidate_skills)
         app.ai_score = real_score
         db.commit()
