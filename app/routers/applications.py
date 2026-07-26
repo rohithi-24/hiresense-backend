@@ -24,7 +24,6 @@ async def apply(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    # Save resume file
     resume_path = ""
     if resume:
         filename = f"{current_user.id}_{job_id}_{resume.filename}"
@@ -46,23 +45,17 @@ async def apply(
     db.commit()
     db.refresh(app)
 
-    # Run real AI screening using BOTH resume text and candidate-selected skills
-    job = db.query(models.Job).filter(models.Job.id == job_id).first()
-    if job:
-        resume_text = extract_text_from_pdf(resume_path) if resume_path else ""
-        skills_from_resume = extract_skills(resume_text)
-        skills_from_form = extract_skills(skills.lower())
-        candidate_skills = list(set(skills_from_resume) | set(skills_from_form))
-
-        job_skills = extract_skills((job.description or "").lower())
-        
-        # Fallback safeguard to prevent zero-division if the job description doesn't trigger any default keywords
-        if not job_skills:
-            job_skills = ["react", "javascript", "python", "tailwind"]
-
-        real_score = calculate_score(job_skills, candidate_skills)
-        app.ai_score = real_score
-        db.commit()
+    # Score based ONLY on the actual resume file content — no resume, no score.
+    # This keeps the result honest and tied to a real document, not self-reported text.
+    if resume_path:
+        job = db.query(models.Job).filter(models.Job.id == job_id).first()
+        if job:
+            resume_text = extract_text_from_pdf(resume_path)
+            candidate_skills = extract_skills(resume_text)
+            job_skills = extract_skills((job.description or "").lower())
+            real_score = calculate_score(job_skills, candidate_skills)
+            app.ai_score = real_score
+            db.commit()
 
     return {"message": "Application submitted", "ai_score": app.ai_score}
 
